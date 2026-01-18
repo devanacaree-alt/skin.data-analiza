@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinData - Darmowa Analiza Skóry</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .quiz-container { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 30px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; }
+        .step { padding: 30px; display: none; }
+        .step.active { display: block; }
+        .question { margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #667eea; }
+        .option { padding: 12px 15px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; margin: 5px 0; transition: all 0.3s; }
+        .option:hover, .option.selected { border-color: #667eea; background: #f0f4ff; }
+        .option.selected { font-weight: 600; }
+        .buttons { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        button { padding: 14px 30px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn-next { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-prev { background: #f5f7fa; color: #666; border: 2px solid #ddd; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .hidden { display: none; }
+        
+        /* STYLES DLA ZDJĘĆ */
+        .photo-upload { border: 2px dashed #667eea; border-radius: 10px; padding: 30px; text-align: center; margin: 20px 0; background: #f8f9ff; }
+        .photo-preview { max-width: 200px; margin: 10px auto; border-radius: 8px; overflow: hidden; }
+        .photo-preview img { width: 100%; height: auto; }
+        
+        /* STYLES DLA WYKRESÓW */
+        .charts-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 30px; }
+        .chart-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .chart-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: #333; }
+        .chart-bar { height: 20px; background: #e9ecef; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        .chart-fill { height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); border-radius: 10px; }
+        
+        /* STYLES DLA ARCHE TYPU */
+        .archetype-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; margin: 20px 0; text-align: center; }
+        .archetype-title { font-size: 2rem; margin-bottom: 10px; font-weight: bold; }
+        .archetype-icon { font-size: 4rem; margin: 20px 0; }
+        
+        /* STYLES DLA PRODUKTÓW */
+        .product-card { background: white; border-radius: 10px; padding: 20px; margin: 15px 0; border: 2px solid #e0e0e0; }
+        .product-link { display: inline-block; background: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: 600; margin-top: 10px; }
+        
+        /* ADMIN PANEL */
+        .admin-panel { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 30px; margin-top: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-number { font-size: 1.8rem; font-weight: bold; color: #667eea; }
+        .stat-title { font-size: 0.9rem; color: #666; }
+        
+        /* TABELE */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background: #f8f9fa; font-weight: 600; color: #495057; }
+        
+        @media (max-width: 768px) {
+            .charts-container { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <!-- EKRAN LOGOWANIA -->
+    <div id="admin-login" class="container" style="max-width: 400px;">
+        <div class="quiz-container">
+            <div class="header">
+                <h1>🔐 Panel Admina SkinData</h1>
+            </div>
+            <div class="step active" style="padding: 40px;">
+                <h2 style="margin-bottom: 20px;">Logowanie</h2>
+                <div class="question">
+                    <input type="password" id="admin-password" placeholder="SkinData2024!" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                    <button onclick="loginAdmin()" style="width: 100%; margin-top: 20px;" class="btn-next">Zaloguj</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quiz-container" class="container hidden">
+        <div class="quiz-container">
+            <div class="header">
+                <h1>🎯 Darmowa Analiza Skóry + Archetyp</h1>
+                <p>Otrzymaj szczegółową analizę i archetyp skóry</p>
+            </div>
+            
+            <!-- KROK 1: Zgody -->
+            <div class="step active" id="step1">
+                <h2>📋 Zgody</h2>
+                <p style="margin-bottom: 20px;">Analiza jest darmowa dzięki dwóm modelom:</p>
+                
+                <div class="question">
+                    <label>
+                        <input type="checkbox" id="consent-analysis" onchange="validateStep1()" style="margin-right: 10px;">
+                        <span style="color: #d32f2f; font-weight: bold;">* WYMAGANE:</span> Wyrażam zgodę na przetwarzanie danych
+                    </label>
+                </div>
+                
+                <div class="question">
+                    <label>
+                        <input type="checkbox" id="consent-affiliate" onchange="validateStep1()" style="margin-right: 10px;">
+                        Chcę otrzymywać rekomendacje produktów (linki afiliacyjne)
+                    </label>
+                </div>
+                
+                <div class="question">
+                    <label>
+                        <input type="checkbox" id="consent-research" onchange="validateStep1()" style="margin-right: 10px;">
+                        Wyrażam zgodę na anonimowe badania rynku
+                    </label>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-next" onclick="nextStep()" id="next1" disabled>Dalej →</button>
+                </div>
+            </div>
+            
+            <!-- KROK 2: Podstawowe -->
+            <div class="step" id="step2">
+                <h2>👤 Podstawowe informacje</h2>
+                
+                <div class="question">
+                    <label>1. Imię:</label>
+                    <input type="text" id="user-name" placeholder="Twoje imię" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-top: 10px;" oninput="validateStep2()">
+                </div>
+                
+                <div class="question">
+                    <label>2. Twój wiek:</label>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 'age', 'step2')">18-24 lat</div>
+                        <div class="option" onclick="selectOption(this, 'age', 'step2')">25-34 lat</div>
+                        <div class="option" onclick="selectOption(this, 'age', 'step2')">35-44 lat</div>
+                        <div class="option" onclick="selectOption(this, 'age', 'step2')">45+ lat</div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>3. Płeć:</label>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 'gender', 'step2')">Kobieta</div>
+                        <div class="option" onclick="selectOption(this, 'gender', 'step2')">Mężczyzna</div>
+                        <div class="option" onclick="selectOption(this, 'gender', 'step2')">Inna</div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>4. Miejscowość:</label>
+                    <input type="text" id="user-city" placeholder="Twoja miejscowość" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-top: 10px;" oninput="validateStep2()">
+                </div>
+                
+                <div class="question">
+                    <label>5. Adres e-mail:</label>
+                    <input type="email" id="user-email" placeholder="email@example.com" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-top: 10px;" oninput="validateStep2()">
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-prev" onclick="prevStep()">← Wstecz</button>
+                    <button class="btn-next" onclick="nextStep()" id="next2" disabled>Dalej →</button>
+                </div>
+            </div>
+            
+            <!-- KROK 3: Zdjęcia skóry (OPCJONALNE) -->
+            <div class="step" id="step3">
+                <h2>📸 Zdjęcia skóry (opcjonalne)</h2>
+                <p style="margin-bottom: 20px; color: #666;">Dodaj zdjęcia dla dokładniejszej analizy. Możesz pominąć ten krok.</p>
+                
+                <div class="photo-upload" id="photo-upload-area">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📁</div>
+                    <p style="font-weight: 600; margin-bottom: 10px;">Przeciągnij zdjęcia tutaj</p>
+                    <p style="color: #666; margin-bottom: 20px;">lub</p>
+                    <button onclick="document.getElementById('file-input').click()" style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        Wybierz zdjęcia
+                    </button>
+                    <p style="margin-top: 15px; font-size: 0.9rem; color: #888;">Maksymalnie 3 zdjęcia, format JPG/PNG</p>
+                    <input type="file" id="file-input" accept="image/*" multiple style="display: none;" onchange="handleFiles(this.files)">
+                </div>
+                
+                <div id="photo-previews" style="margin-top: 20px;"></div>
+                
+                <div class="buttons">
+                    <button class="btn-prev" onclick="prevStep()">← Wstecz</button>
+                    <button class="btn-next" onclick="nextStep()" id="next3">Pomiń zdjęcia →</button>
+                </div>
+            </div>
+            
+            <!-- KROK 4: Typ skóry -->
+            <div class="step" id="step4">
+                <h2>💆‍♀️ Typ skóry</h2>
+                <div style="background: #e7f3ff; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; color: #0056b3;">
+                    <strong>Zaznacz 2 opcje</strong> które najlepiej opisują Twoją skórę:
+                </div>
+                
+                <div class="question">
+                    <label>6. Jak opisałbyś swoją skórę? (wybierz 2):</label>
+                    <div class="options">
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Sucha, często się łuszczy</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Tłusta, błyszcząca w strefie T</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Mieszana</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Normalna</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Wrażliwa</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Naczynkowa</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Dojrzała (40+)</div>
+                        <div class="option" onclick="toggleSelection(this, 'skinType')">Trądzikowa</div>
+                    </div>
+                    <div id="skinType-counter" style="margin-top: 10px; font-size: 0.9rem; color: #666;"></div>
+                </div>
+                
+                <div class="question">
+                    <label>7. Główny problem skóry:</label>
+                    <div class="options">
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Trądzik</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Przebarwienia</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Zmarszczki</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Naczynka (pajączki)</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Suchość</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Nadwrażliwość</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Blizny potrądzikowe</div>
+                        <div class="option" onclick="selectSingle(this, 'mainProblem')">Obrzęki pod oczami</div>
+                    </div>
+                </div>
+                
+                <div class="question">
+                    <label>8. Planujesz wizytę u specjalisty?</label>
+                    <div class="options">
+                        <div class="option" onclick="selectSingle(this, 'visitPlan')">W ciągu miesiąca</div>
+                        <div class="option" onclick="selectSingle(this, 'visitPlan')">W ciągu 1-3 miesięcy</div>
+                        <div class="option" onclick="selectSingle(this, 'visitPlan')">Tylko się zastanawiam</div>
+                        <div class="option" onclick="selectSingle(this, 'visitPlan')">Nie planuję</div>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-prev" onclick="prevStep()">← Wstecz</button>
+                    <button class="btn-next" onclick="nextStep()" id="next4" disabled>Dalej →</button>
+                </div>
+            </div>
+            
+            <!-- KROK 5: Podsumowanie -->
+            <div class="step" id="step5">
+                <h2>📋 Podsumowanie</h2>
+                
+                <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px;">Twoje odpowiedzi:</h3>
+                    <div id="summary-content"></div>
+                </div>
+                
+                <div class="question">
+                    <label>Potwierdź analizę:</label>
+                    <div style="margin-top: 15px;">
+                        <label style="display: block; margin-bottom: 10px;">
+                            <input type="checkbox" id="final-confirm" onchange="validateStep5()" style="margin-right: 10px;">
+                            Potwierdzam, że dane są poprawne
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-prev" onclick="prevStep()">← Wstecz</button>
+                    <button class="btn-next" onclick="submitQuiz()" id="next5" disabled>Poznaj swój archetyp skóry</button>
+                </div>
+            </div>
+            
+            <!-- KROK 6: WYNIK - ARCHE TYP + ANALIZA -->
+            <div class="step" id="step6">
+                <div style="padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="font-size: 60px; color: #4CAF50; margin-bottom: 20px;">✨</div>
+                        <h1 style="color: #333; margin-bottom: 10px;">Twoja analiza gotowa!</h1>
+                        <p style="color: #666; font-size: 1.1rem;">Oto Twój archetyp skóry i spersonalizowana analiza</p>
+                    </div>
+                    
+                    <!-- ARCHE TYP -->
+                    <div id="archetype-result"></div>
+                    
+                    <!-- ANALIZA SZCZEGÓŁOWA -->
+                    <div style="background: white; border-radius: 10px; padding: 25px; margin: 25px 0; border: 2px solid #e0e0e0;">
+                        <h2 style="color: #333; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px;">🔍 Szczegółowa analiza</h2>
+                        <div id="detailed-analysis"></div>
+                    </div>
+                    
+                    <!-- PRODUKTY -->
+                    <div id="product-section" style="margin-top: 30px;">
+                        <h2 style="color: #333; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px;">💎 Polecane produkty</h2>
+                        <div id="product-recommendations"></div>
+                    </div>
+                    
+                    <!-- DANE DO FIRM -->
+                    <div style="margin-top: 40px; padding: 25px; background: #f0f4ff; border-radius: 10px; text-align: center;">
+                        <h3 style="color: #667eea; margin-bottom: 15px;">📊 Twoje dane pomagają w badaniach</h3>
+                        <p style="margin-bottom: 15px;">Dzięki Twoim odpowiedziom firmy kosmetyczne tworzą lepsze produkty!</p>
+                        <div style="display: inline-flex; gap: 15px; margin-top: 10px;">
+                            <div style="background: white; padding: 15px; border-radius: 8px; min-width: 120px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;" id="user-value">25 zł</div>
+                                <div style="font-size: 0.8rem; color: #666;">Twoja wartość</div>
+                            </div>
+                            <div style="background: white; padding: 15px; border-radius: 8px; min-width: 120px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #007bff;">1</div>
+                                <div style="font-size: 0.8rem; color: #666;">Archetyp</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL ADMINA Z WYKRESAMI -->
+    <div id="admin-panel" class="container hidden">
+        <div class="admin-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1 style="color: #333;">🔐 Panel Admina SkinData</h1>
+                <button onclick="logoutAdmin()" style="padding: 10px 15px; background: #ff4444; color: white; border: none; border-radius: 5px;">
+                    🚪 Wyloguj
+                </button>
+            </div>
+            
+            <!-- STATYSTYKI -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-leads">0</div>
+                    <div class="stat-title">Wszystkie analizy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="affiliate-leads">0</div>
+                    <div class="stat-title">Zgoda afiliacja</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="research-leads">0</div>
+                    <div class="stat-title">Zgoda badania</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-value">0 zł</div>
+                    <div class="stat-title">Łączna wartość</div>
+                </div>
+            </div>
+            
+            <!-- KONTROLE -->
+            <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+                <button onclick="exportCSV()" style="padding: 12px 25px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    📥 Eksportuj CSV
+                </button>
+                <button onclick="exportAnonymizedData()" style="padding: 12px 25px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    📊 Eksportuj dane badawcze
+                </button>
+                <button onclick="addTestData()" style="padding: 12px 25px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    ➕ Testowe dane
+                </button>
+            </div>
+            
+            <!-- WYKRESY -->
+            <h2 style="margin: 30px 0 20px 0; color: #333;">📈 Wykresy analityczne</h2>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <div class="chart-title">Rozkład wieku</div>
+                    <div id="chart-age">
+                        <!-- Wykres wieku -->
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-title">Główne problemy</div>
+                    <div id="chart-problems">
+                        <!-- Wykres problemów -->
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-title">Archetypy skóry</div>
+                    <div id="chart-archetypes">
+                        <!-- Wykres archetypów -->
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-title">Planowanie wizyt</div>
+                    <div id="chart-visits">
+                        <!-- Wykres wizyt -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TABELA LEADS -->
+            <h2 style="margin: 40px 0 20px 0; color: #333;">📋 Lista użytkowników</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Imię</th>
+                            <th>Wiek</th>
+                            <th>Płeć</th>
+                            <th>Miasto</th>
+                            <th>Archetyp</th>
+                            <th>Problem</th>
+                            <th>Plan wizyty</th>
+                            <th>Zdjęcia</th>
+                            <th>Wartość</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-table">
+                        <!-- Dane wstawiane przez JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- RAPORTY DO SPRZEDAŻY -->
+            <h2 style="margin: 40px 0 20px 0; color: #333;">📄 Raporty do sprzedaży firmom</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #2e7d32;">👥 Raport demograficzny</h4>
+                    <p style="font-size: 0.9rem; margin: 10px 0;">Rozkład wieku, płci, lokalizacji</p>
+                    <button onclick="generateDemographicReport()" style="padding: 8px 15px; background: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                        Generuj raport (500 zł)
+                    </button>
+                </div>
+                <div style="background: #e3f2fd; padding: 20px; border-radius: 10px;">
+                    <h4 style="color: #1565c0;">🔍 Raport problemów skóry</h4>
+                    <p style="font-size: 0.9rem; margin: 10px 0;">Analiza najczęstszych problemów</p>
+                    <button onclick="generateProblemReport()" style="padding: 8px 15px; background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                        Generuj raport (800 zł)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "Oliwka.1572";
+        
+        // BAZA ARCHE TYPÓW
+        const SKIN_ARCHETYPES = {
+            "TRĄDZIKOWA_MŁODA": {
+                name: "SKÓRA TRĄDZIKOWA MŁODA",
+                icon: "🔥",
+                description: "Skóra z aktywnym trądzikiem, tendencją do przetłuszczania",
+                characteristics: ["Tłusta w strefie T", "Zaskórniki", "Stany zapalne", "Wrażliwa"],
+                routine: ["Delikatne oczyszczanie 2x dziennie", "Kwas salicylowy", "Nawilżanie bez komedogenów", "SPF 30+"],
+                products: [
+                    {name: "Żel z kwasem salicylowym", brand: "CeraVe", link: "https://example.com/cerave?ref=skindata", commission: 12},
+                    {name: "Serum Niacynamid 10%", brand: "The Ordinary", link: "https://example.com/ordinary?ref=skindata", commission: 8},
+                    {name: "Krem nawilżający", brand: "Bioderma", link: "https://example.com/bioderma?ref=skindata", commission: 10}
+                ]
+            },
+            "SUCHA_DOJRZAŁA": {
+                name: "SKÓRA SUCHA DOJRZAŁA",
+                icon: "🍂",
+                description: "Skóra z oznakami starzenia, sucha, wymagająca nawilżenia",
+                characteristics: ["Sucha, łuszcząca się", "Zmarszczki", "Wiotkość", "Przebarwienia"],
+                routine: ["Kremowe oczyszczanie", "Retinol", "Bogate kremy", "Kwas hialuronowy", "SPF 50+"],
+                products: [
+                    {name: "Krem z retinolem", brand: "La Roche-Posay", link: "https://example.com/laroche?ref=skindata", commission: 18},
+                    {name: "Serum hialuronowe", brand: "Vichy", link: "https://example.com/vichy?ref=skindata", commission: 15},
+                    {name: "Krem na noc", brand: "L'Occitane", link: "https://example.com/loccitane?ref=skindata", commission: 20}
+                ]
+            },
+            "MIESZANA_WRAŻLIWA": {
+                name: "SKÓRA MIESZANA WRAŻLIWA",
+                icon: "⚖️",
+                description: "Sucha na policzkach, tłusta w strefie T, z tendencją do podrażnień",
+                characteristics: ["Sucha na policzkach", "Tłusta w strefie T", "Rumień", "Reaktywna"],
+                routine: ["Łagodne oczyszczanie", "Produkty dla wrażliwej", "Oddzielna pielęgnacja stref", "Minimalistyczna rutyna"],
+                products: [
+                    {name: "Emulsja do wrażliwej", brand: "Bioderma", link: "https://example.com/bioderma2?ref=skindata", commission: 10},
+                    {name: "Krem z ceramidami", brand: "CeraVe", link: "https://example.com/cerave2?ref=skindata", commission: 12},
+                    {name: "Mgiełka kojąca", brand: "Avene", link: "https://example.com/avene?ref=skindata", commission: 9}
+                ]
+            },
+            "NACZYNKOWA": {
+                name: "SKÓRA NACZYNKOWA",
+                icon: "🩸",
+                description: "Skóra z widocznymi naczynkami, tendencją do rumienia",
+                characteristics: ["Czerwienienie", "Pajączki", "Wrażliwość", "Reaktywna"],
+                routine: ["Bardzo delikatne oczyszczanie", "Witamina K", "Kojące składniki", "Ochrona przed czynnikami zewn."],
+                products: [
+                    {name: "Krem na naczynka", brand: "Dermedic", link: "https://example.com/dermedic?ref=skindata", commission: 16},
+                    {name: "Serum z witaminą C", brand: "Paula's Choice", link: "https://example.com/paula?ref=skindata", commission: 18},
+                    {name: "Krem z rutyną", brand: "Pharmaceris", link: "https://example.com/pharmaceris?ref=skindata", commission: 14}
+                ]
+            }
+        };
+        
+        let currentStep = 1;
+        let userData = {
+            consents: {},
+            basics: {},
+            skin: {},
+            photos: [],
+            revenue: 0,
+            timestamp: '',
+            archetype: ''
+        };
+        
+        // === FUNKCJE QUIZU ===
+        function validateStep1() {
+            const required = document.getElementById('consent-analysis').checked;
+            document.getElementById('next1').disabled = !required;
+            userData.consents = {
+                analysis: required,
+                affiliate: document.getElementById('consent-affiliate').checked,
+                research: document.getElementById('consent-research').checked
+            };
+        }
+        
+        function validateStep2() {
+            const name = document.getElementById('user-name').value.trim();
+            const age = userData.basics?.age;
+            const gender = userData.basics?.gender;
+            const city = document.getElementById('user-city').value.trim();
+            const email = document.getElementById('user-email').value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            userData.basics.name = name;
+            userData.basics.city = city;
+            userData.basics.email = email;
+            
+            document.getElementById('next2').disabled = !(name && age && gender && city && emailRegex.test(email));
+        }
+        
+        function selectOption(element, category, step) {
+            const parent = element.parentElement;
+            parent.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            userData.basics[category] = element.textContent;
+            if (step === 'step2') validateStep2();
+        }
+        
+        function selectSingle(element, category) {
+            const parent = element.parentElement;
+            parent.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            userData.skin[category] = element.textContent;
+            if (category === 'mainProblem' || category === 'visitPlan') {
+                validateStep4();
+            }
+        }
+        
+        function toggleSelection(element, category) {
+            element.classList.toggle('selected');
+            if (!userData.skin[category]) userData.skin[category] = [];
+            const selectedElements = element.parentElement.querySelectorAll('.option.selected');
+            const selectedValues = Array.from(selectedElements).map(el => el.textContent);
+            if (selectedElements.length > 2) {
+                element.classList.remove('selected');
+                alert('Możesz wybrać maksymalnie 2 opcje!');
+                return;
+            }
+            userData.skin[category] = selectedValues;
+            document.getElementById('skinType-counter').textContent = `Wybrano: ${selectedValues.length}/2 opcji`;
+            validateStep4();
+        }
+        
+        function validateStep4() {
+            const skinSelected = userData.skin?.skinType?.length === 2;
+            const problemSelected = userData.skin?.mainProblem;
+            const visitSelected = userData.skin?.visitPlan;
+            document.getElementById('next4').disabled = !(skinSelected && problemSelected && visitSelected);
+        }
+        
+        function validateStep5() {
+            document.getElementById('next5').disabled = !document.getElementById('final-confirm').checked;
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            let html = `
+                <p><strong>Imię:</strong> ${userData.basics.name || 'Brak'}</p>
+                <p><strong>Wiek:</strong> ${userData.basics.age || 'Brak'}</p>
+                <p><strong>Płeć:</strong> ${userData.basics.gender || 'Brak'}</p>
+                <p><strong>Miasto:</strong> ${userData.basics.city || 'Brak'}</p>
+                <p><strong>Typ skóry:</strong> ${userData.skin.skinType?.join(', ') || 'Brak'}</p>
+                <p><strong>Główny problem:</strong> ${userData.skin.mainProblem || 'Brak'}</p>
+                <p><strong>Plan wizyty:</strong> ${userData.skin.visitPlan || 'Brak'}</p>
+                <p><strong>Zdjęcia:</strong> ${userData.photos.length > 0 ? 'Tak (' + userData.photos.length + ')' : 'Nie'}</p>
+            `;
+            document.getElementById('summary-content').innerHTML = html;
+        }
+        
+        // Obsługa zdjęć
+        function handleFiles(files) {
+            const previews = document.getElementById('photo-previews');
+            previews.innerHTML = '';
+            userData.photos = [];
+            
+            Array.from(files).slice(0, 3).forEach((file, index) => {
+                if (!file.type.match('image.*')) {
+                    alert('Proszę wybierać tylko zdjęcia (JPG, PNG)');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    userData.photos.push({
+                        name: file.name,
+                        data: e.target.result,
+                        type: file.type
+                    });
+                    
+                    const preview = document.createElement('div');
+                    preview.className = 'photo-preview';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Zdjęcie ${index + 1}">
+                        <button onclick="removePhoto(${index})" style="margin-top: 5px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.8rem;">
+                            Usuń
+                        </button>
+                    `;
+                    previews.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function removePhoto(index) {
+            userData.photos.splice(index, 1);
+            handleFiles([]); // Resetuje podglądy
+        }
+        
+        // Nawigacja
+        function nextStep() {
+            if (currentStep < 6) {
+                document.getElementById('step' + currentStep).classList.remove('active');
+                currentStep++;
+                document.getElementById('step' + currentStep).classList.add('active');
+            }
+        }
+        
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById('step' + currentStep).classList.remove('active');
+                currentStep--;
+                document.getElementById('step' + currentStep).classList.add('active');
+            }
+        }
+        
+        // Zapis quizu
+        function submitQuiz() {
+            userData.timestamp = new Date().toISOString();
+            calculateArchetype();
+            calculateValue();
+            localStorage.setItem('skindata_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9), JSON.stringify(userData));
+            showResults();
+            document.getElementById('step5').classList.remove('active');
+            document.getElementById('step6').classList.add('active');
+            if (!document.getElementById('admin-panel').classList.contains('hidden')) {
+                loadAdminData();
+            }
+        }
+        
+        function calculateArchetype() {
+            const problem = userData.skin.mainProblem || '';
+            const age = userData.basics.age || '';
+            
+            if (problem.includes('Trądzik') && (age.includes('18-24') || age.includes('25-34'))) {
+                userData.archetype = "TRĄDZIKOWA_MŁODA";
+            } else if (problem.includes('Zmarszczki') || age.includes('45+')) {
+                userData.archetype = "SUCHA_DOJRZAŁA";
+            } else if (problem.includes('Naczynka')) {
+                userData.archetype = "NACZYNKOWA";
+            } else {
+                userData.archetype = "MIESZANA_WRAŻLIWA";
+            }
+        }
+        
+        function calculateValue() {
+            let value = 0;
+            if (userData.consents.affiliate) value += 15;
+            if (userData.consents.research) value += 10;
+            if (userData.skin.mainProblem === 'Trądzik') value += 10;
+            if (userData.skin.mainProblem === 'Zmarszczki') value += 15;
+            if (userData.photos.length > 0) value += 5;
+            if (userData.skin.visitPlan === 'W ciągu miesiąca') value += 10;
+            userData.revenue = value;
+            document.getElementById('user-value').textContent = value + ' zł';
+        }
+        
+        function showResults() {
+            const archetype = SKIN_ARCHETYPES[userData.archetype] || SKIN_ARCHETYPES["MIESZANA_WRAŻLIWA"];
+            
+            // Archetyp
+            let archetypeHTML = `
+                <div class="archetype-card">
+                    <div class="archetype-icon">${archetype.icon}</div>
+                    <div class="archetype-title">${archetype.name}</div>
+                    <div style="font-size: 1.2rem; opacity: 0.9; margin-top: 10px;">${archetype.description}</div>
+                </div>
+            `;
+            document.getElementById('archetype-result').innerHTML = archetypeHTML;
+            
+            // Szczegółowa analiza
+            let analysisHTML = `
+                <h3 style="color: #333; margin-bottom: 15px;">Charakterystyka Twojej skóry:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    ${archetype.characteristics.map(char => `<li style="margin-bottom: 10px; padding-left: 25px; position: relative;">✓ ${char}</li>`).join('')}
+                </ul>
+                
+                <h3 style="color: #333; margin-top: 25px; margin-bottom: 15px;">Zalecana rutyna pielęgnacyjna:</h3>
+                <ol style="padding-left: 20px;">
+                    ${archetype.routine.map(step => `<li style="margin-bottom: 8px;">${step}</li>`).join('')}
+                </ol>
+                
+                ${userData.photos.length > 0 ? 
+                    `<div style="margin-top: 25px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
+                        <strong>📸 Zdjęcia analizy:</strong> Przeanalizowaliśmy ${userData.photos.length} zdjęć Twojej skóry
+                    </div>` : ''
+                }
+            `;
+            document.getElementById('detailed-analysis').innerHTML = analysisHTML;
+            
+            // Produkty (tylko jeśli zgoda)
+            if (userData.consents.affiliate) {
+                let productsHTML = '';
+                archetype.products.forEach(product => {
+                    productsHTML += `
+                        <div class="product-card">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #333; margin-bottom: 5px;">${product.name}</div>
+                            <div style="color: #666; margin-bottom: 10px;">Marka: ${product.brand}</div>
+                            <a href="${product.link}" target="_blank" class="product-link">
+                                🛍️ Zobacz produkt (prowizja: ${product.commission} zł)
+                            </a>
+                        </div>
+                    `;
+                });
+                document.getElementById('product-recommendations').innerHTML = productsHTML;
+            } else {
+                document.getElementById('product-section').innerHTML = `
+                    <div style="text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px;">
+                        <h3 style="color: #666; margin-bottom: 15px;">Rekomendacje produktów</h3>
+                        <p>Wyraź zgodę na rekomendacje produktów, aby zobaczyć spersonalizowane propozycje.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // === PANEL ADMINA ===
+        function loginAdmin() {
+            if (document.getElementById('admin-password').value === ADMIN_PASSWORD) {
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('quiz-container').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                alert('Niepoprawne hasło!');
+            }
+        }
+        
+        function logoutAdmin() {
+            location.reload();
+        }
+        
+        function loadAdminData() {
+            const leads = [];
+            let affiliateCount = 0;
+            let researchCount = 0;
+            let totalValue = 0;
+            
+            // Pobierz dane
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('skindata_')) {
+                    const data = JSON.parse(localStorage.getItem(key));
+                    leads.push(data);
+                    if (data.consents?.affiliate) affiliateCount++;
+                    if (data.consents?.research) researchCount++;
+                    totalValue += data.revenue || 0;
+                }
+            }
+            
+            // Statystyki
+            document.getElementById('total-leads').textContent = leads.length;
+            document.getElementById('affiliate-leads').textContent = affiliateCount;
+            document.getElementById('research-leads').textContent = researchCount;
+            document.getElementById('total-value').textContent = totalValue + ' zł';
+            
+            // Tabela
+            const tableBody = document.getElementById('leads-table');
+            tableBody.innerHTML = '';
+            
+            leads.forEach(lead => {
+                const archetypeName = SKIN_ARCHETYPES[lead.archetype]?.name || 'Nieokreślony';
+                const date = new Date(lead.timestamp);
+                const row = `
+                    <tr>
+                        <td>${lead.basics?.name || '-'}</td>
+                        <td>${lead.basics?.age || '-'}</td>
+                        <td>${lead.basics?.gender || '-'}</td>
+                        <td>${lead.basics?.city || '-'}</td>
+                        <td>${archetypeName}</td>
+                        <td>${lead.skin?.mainProblem || '-'}</td>
+                        <td>${lead.skin?.visitPlan || '-'}</td>
+                        <td>${lead.photos?.length > 0 ? '✅ (' + lead.photos.length + ')' : '❌'}</td>
+                        <td>${lead.revenue || 0} zł</td>
+                        <td>${date.toLocaleDateString('pl-PL')}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+            
+            // Generuj wykresy
+            generateCharts(leads);
+        }
+        
+        function generateCharts(leads) {
+            // Wykres wieku
+            const ageGroups = {'18-24': 0, '25-34': 0, '35-44': 0, '45+': 0};
+            leads.forEach(lead => {
+                const age = lead.basics?.age;
+                if (age && ageGroups.hasOwnProperty(age.split(' ')[0])) {
+                    ageGroups[age.split(' ')[0]]++;
+                }
+            });
+            
+            let ageChartHTML = '';
+            Object.entries(ageGroups).forEach(([age, count]) => {
+                const percentage = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+                ageChartHTML += `
+                    <div style="margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>${age} lat</span>
+                            <span>${count} (${percentage}%)</span>
+                        </div>
+                        <div class="chart-bar">
+                            <div class="chart-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('chart-age').innerHTML = ageChartHTML;
+            
+            // Wykres problemów
+            const problems = {};
+            leads.forEach(lead => {
+                const problem = lead.skin?.mainProblem;
+                if (problem) problems[problem] = (problems[problem] || 0) + 1;
+            });
+            
+            let problemsChartHTML = '';
+            Object.entries(problems).forEach(([problem, count]) => {
+                const percentage = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+                problemsChartHTML += `
+                    <div style="margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${problem}</span>
+                            <span>${count}</span>
+                        </div>
+                        <div class="chart-bar">
+                            <div class="chart-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('chart-problems').innerHTML = problemsChartHTML;
+            
+            // Wykres archetypów
+            const archetypes = {};
+            leads.forEach(lead => {
+                const archetype = SKIN_ARCHETYPES[lead.archetype]?.name || 'Inny';
+                archetypes[archetype] = (archetypes[archetype] || 0) + 1;
+            });
+            
+            let archetypesChartHTML = '';
+            Object.entries(archetypes).forEach(([archetype, count]) => {
+                archetypesChartHTML += `<div style="margin: 8px 0;">${archetype}: <strong>${count}</strong></div>`;
+            });
+            document.getElementById('chart-archetypes').innerHTML = archetypesChartHTML;
+            
+            // Wykres wizyt
+            const visits = {};
+            leads.forEach(lead => {
+                const visit = lead.skin?.visitPlan || 'Brak';
+                visits[visit] = (visits[visit] || 0) + 1;
+            });
+            
+            let visitsChartHTML = '';
+            Object.entries(visits).forEach(([visit, count]) => {
+                visitsChartHTML += `<div style="margin: 8px 0;">${visit}: <strong>${count}</strong></div>`;
+            });
+            document.getElementById('chart-visits').innerHTML = visitsChartHTML;
+        }
+        
+        function exportCSV() {
+            let csv = 'Imię,Wiek,Płeć,Miasto,Email,Archetyp,Problem,Plan wizyty,Zdjęcia,Zgoda afiliacja,Zgoda badania,Wartość,Data\n';
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('skindata_')) {
+                    const data = JSON.parse(localStorage.getItem(key));
+                    const archetypeName = SKIN_ARCHETYPES[data.archetype]?.name || 'Nieokreślony';
+                    const date = new Date(data.timestamp);
+                    
+                    csv += `"${data.basics?.name || ''}","${data.basics?.age || ''}","${data.basics?.gender || ''}","${data.basics?.city || ''}","${data.basics?.email || ''}","${archetypeName}","${data.skin?.mainProblem || ''}","${data.skin?.visitPlan || ''}","${data.photos?.length || 0}","${data.consents?.affiliate ? 'TAK' : 'NIE'}","${data.consents?.research ? 'TAK' : 'NIE'}","${data.revenue || 0}","${date.toLocaleDateString('pl-PL')}"\n`;
+                }
+            }
+            
+            downloadFile(csv, 'skindata_pelne_dane.csv');
+        }
+        
+        function exportAnonymizedData() {
+            let csv = 'WiekGrupa,Płeć,MiastoWielkosc,Archetyp,Problem,PlanWizyty,Zdjecia,Timestamp\n';
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('skindata_')) {
+                    const data = JSON.parse(localStorage.getItem(key));
+                    const citySize = data.basics?.city ? (data.basics.city.length > 10 ? 'duże' : 'małe') : 'nieznane';
+                    const archetypeName = SKIN_ARCHETYPES[data.archetype]?.name || 'Inny';
+                    
+                    csv += `"${data.basics?.age || ''}","${data.basics?.gender || ''}","${citySize}","${archetypeName}","${data.skin?.mainProblem || ''}","${data.skin?.visitPlan || ''}","${data.photos?.length || 0}","${data.timestamp}"\n`;
+                }
+            }
+            
+            downloadFile(csv, 'skindata_anonimowe_dane_badawcze.csv');
+            alert('Wyeksportowano anonimowe dane do sprzedaży firmom!');
+        }
+        
+        function generateDemographicReport() {
+            const leads = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('skindata_')) {
+                    leads.push(JSON.parse(localStorage.getItem(key)));
+                }
+            }
+            
+            let report = `RAPORT DEMOGRAFICZNY - SkinData\n`;
+            report += `Data: ${new Date().toLocaleDateString('pl-PL')}\n`;
+            report += `Próbka: ${leads.length} osób\n\n`;
+            
+            // Analiza wieku
+            const ageGroups = {'18-24': 0, '25-34': 0, '35-44': 0, '45+': 0};
+            leads.forEach(lead => {
+                const age = lead.basics?.age;
+                if (age && ageGroups.hasOwnProperty(age.split(' ')[0])) {
+                    ageGroups[age.split(' ')[0]]++;
+                }
+            });
+            
+            report += `ROZKŁAD WIEKU:\n`;
+            Object.entries(ageGroups).forEach(([age, count]) => {
+                const percentage = Math.round((count / leads.length) * 100);
+                report += `${age} lat: ${count} osób (${percentage}%)\n`;
+            });
+            
+            report += `\n---\nCena raportu: 500 zł\n`;
+            downloadFile(report, 'raport_demograficzny_skindata.txt');
+            alert('Raport demograficzny wygenerowany! Możesz go sprzedać za 500 zł.');
+        }
+        
+        function generateProblemReport() {
+            const leads = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('skindata_')) {
+                    leads.push(JSON.parse(localStorage.getItem(key)));
+                }
+            }
+            
+            let report = `RAPORT PROBLEMÓW SKÓRY - SkinData\n`;
+            report += `Data: ${new Date().toLocaleDateString('pl-PL')}\n`;
+            report += `Próbka: ${leads.length} osób\n\n`;
+            
+            const problems = {};
+            leads.forEach(lead => {
+                const problem = lead.skin?.mainProblem;
+                if (problem) problems[problem] = (problems[problem] || 0) + 1;
+            });
+            
+            report += `NAJCZĘSTSZE PROBLEMY SKÓRY:\n`;
+            Object.entries(problems).forEach(([problem, count]) => {
+                const percentage = Math.round((count / leads.length) * 100);
+                report += `${problem}: ${count} osób (${percentage}%)\n`;
+            });
+            
+            report += `\n---\nCena raportu: 800 zł\n`;
+            downloadFile(report, 'raport_problemow_skory.txt');
+            alert('Raport problemów skóry wygenerowany! Możesz go sprzedać za 800 zł.');
+        }
+        
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        }
+        
+        function addTestData() {
+            const testData = {
+                email: "test@example.com",
+                consents: { analysis: true, affiliate: true, research: true },
+                basics: { name: "Testowy", age: "25-34 lat", gender: "Kobieta", city: "Warszawa", email: "test@example.com" },
+                skin: { skinType: ["Tłusta", "Trądzikowa"], mainProblem: "Trądzik", visitPlan: "W ciągu miesiąca" },
+                photos: [],
+                revenue: 35,
+                timestamp: new Date().toISOString(),
+                archetype: "TRĄDZIKOWA_MŁODA"
+            };
+            
+            const token = 'test_' + Date.now();
+            localStorage.setItem('skindata_' + token, JSON.stringify(testData));
+            loadAdminData();
+            alert('Dodano testowe dane!');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("SkinData loaded");
+        });
+    </script>
+</body>
+</html>
